@@ -434,6 +434,37 @@ flights |>
   
 #Frontier airlines
 
+#2. Find the flights that are the most delayed upon departure from each destination
+flights |> 
+  group_by(dest) |> 
+  summarize(
+    avg_dep_delay = mean(dep_delay, na.rm = TRUE)
+  ) |> 
+  arrange(avg_dep_delay)
 
+#3. How do dealys vary over the course of the day? 
+flights |> 
+  group_by(hour) |> 
+  summarize(
+    avg_dep_delay = mean(dep_delay, na.rm = TRUE)
+    ) |> 
+  ggplot(aes(x = hour, y = avg_dep_delay)) + 
+  geom_line()
 
+ggsave('Output/avg_dep_delay_by_carrier.png')
+
+#4. What happens if you suply a negative n to slice_ functions?
+
+flights |> 
+  group_by(carrier) |> 
+  slice_min(dep_delay, n = -5)
+#this gets all except the max 5 rows
+
+#5. Explain what count() does in terms of the dplyr verbs. What does the sort argument to count() do? 
+
+#Count says how many observations there are in each group
+#
+flights |> 
+  group_by(month) |> 
+  count()
 ```
