@@ -1,0 +1,62 @@
+---
+author: Jed Roundy
+format: pdf
+---
+
+#7.1
+```{r}
+library(tidyverse)
+library(janitor)
+```
+
+#7.2 Reading Data From a File
+```{r}
+#Start with csvs
+students <- read_csv('https://pos.it/r4ds-students-csv')
+
+#we might notice that there are values that say "N/A", but R doesn't recognize them as such
+#we can specify that in the read
+students <- read_csv(
+  file = 'https://pos.it/r4ds-students-csv', 
+  na = c('N/A', '')
+)
+#we also have variable names that have spaces, which is a no-no
+students |> 
+  rename(full_name = `Full Name`, 
+         student_id = `Student ID`
+         )
+
+#and the variable names are still a little wacky, following different conventions.
+#Maybe just use janitor::clean_names to make them all snake case
+students |> 
+  clean_names()
+
+#and we also have some variables, such as meal_plan, that appear as strings but are actually categorical
+students |> 
+  clean_names() |> 
+  mutate(
+    meal_plan = factor(meal_plan)
+  )
+
+#jeez, somebody typed out 5 for the age
+students |> 
+  clean_names() |> 
+  mutate(
+    meal_plan = factor(meal_plan), 
+    age = parse_number(if_else(age == 'five', '5', age))
+  )
+
+#we can specify the col names in read_csv as well
+students <- read_csv(
+                      file = 'https://pos.it/r4ds-students-csv', 
+                      col_names = c('id', 'full_name', 'favorite_food', 'meal_plan', 'age'))
+```
+
+#7.4 Reading Data from Multiple Files
+```{r}
+#we can stack multiple data files on top of each other
+sales_files <- c('https://pos.it/r4ds-01-sales', 'https://pos.it/r4ds-02-sales', 'https://pos.it/r4ds-03-sales')
+
+sales
+
+```
