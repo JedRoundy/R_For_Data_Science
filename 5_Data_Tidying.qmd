@@ -1,0 +1,101 @@
+---
+author: Jed Roundy
+format: pdf
+---
+
+
+#5.1
+```{r}
+library(tidyverse)
+```
+
+#5.2 Tidy Data
+```{r}
+#We like tidy data. 
+
+#Tidy data is where each variable has its own column, 
+#each observation has its own row,
+#and each cell is a single value
+
+```
+
+#5.3 Lengthening Data
+
+```{r}
+#Sometimes we will need to 'pivot' our data'
+#There are two pivot funcs, pivot_wider and pivot_longer
+#First up, pivot_longer
+
+#The billboard dataset has a column for each week of the year. This isn't necessary. 
+#We prefer the data is repeated longer than wider here. 
+
+billboard |> 
+  pivot_longer(cols = starts_with('wk'), 
+               names_to = 'week', 
+               values_to = 'rank'
+               )
+
+#However, now we have a bunch of missing values where rank exists, because songs ebb and flow from the list. 
+#Lets drop those
+billboard |> 
+  pivot_longer(cols = starts_with('wk'), 
+               names_to = 'week', 
+               values_to = 'rank', 
+               values_drop_na = TRUE)
+
+#However, we still have that pesky 'wk1' in the week column. 
+#parse_number() finds the first number form a string and ignores all other text
+billboard_longer <- billboard |> 
+  pivot_longer(cols = starts_with('wk'), 
+               names_to = 'week',
+               values_to = 'rank',
+               values_drop_na = TRUE
+               ) |> 
+  mutate(
+    week = parse_number(week)
+    )
+
+#Lets plot this
+billboard_longer |> 
+  ggplot(aes(x = week, y = rank, group = track)) + 
+  geom_line(alpha = .5) + 
+  scale_y_reverse()
+
+
+#What if we have lots of complicated column names? 
+#the who2 has many cols that describe measurements of individuals, their gender, and their age range
+#Lets dissect this
+who2 |> 
+  pivot_longer(
+    cols = c(!country:year), 
+    names_to = c('measurement','gender', 'age_range'), 
+    names_sep = '_', 
+    values_to = 'count'
+  )
+```
+
+#5.4 Widening Data
+```{r}
+#This is used when one observation is split across multiple rows
+cms_patient_experience
+#The core unit being studeied is an org, but the org is spread across 6 rows
+#Each row is a measurement taken in the survey organization
+cms_patient_experience |> 
+  distinct(measure_cd, measure_title)
+
+#Lets pivot wider
+cms_patient_experience |> 
+  pivot_wider(
+    names_from = measure_cd, 
+    values_from = prf_rate
+  )
+
+#that didn't seem to help. We need to specify the id_cols
+cms_patient_experience |> 
+  pivot_wider(
+    id_cols = starts_with('org'), 
+    names_from = measure_cd, 
+    values_from = prf_rate
+  )
+
+```
