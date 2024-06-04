@@ -39,7 +39,7 @@ students |>
   )
 
 #jeez, somebody typed out 5 for the age
-students |> 
+students <- students |> 
   clean_names() |> 
   mutate(
     meal_plan = factor(meal_plan), 
@@ -57,6 +57,38 @@ students <- read_csv(
 #we can stack multiple data files on top of each other
 sales_files <- c('https://pos.it/r4ds-01-sales', 'https://pos.it/r4ds-02-sales', 'https://pos.it/r4ds-03-sales')
 
-sales
+sales_files
+
+read_csv(sales_files, id = 'file')
+```
+#7.5 Writing Data
+```{r}
+#currently object has fctr dtypes
+students
+
+#lets write to a csv
+write_csv(students, 'Output/students.csv')
+
+#and read it back
+students <- read_csv('Output/students.csv')
+
+#but now we've lost the correct dtypes!
+students
+
+#maybe we could try again
+students <- read_csv(
+  file = 'https://pos.it/r4ds-students-csv', 
+  na = c('N/A', '')
+)
+students <- students |> 
+  clean_names() |> 
+  mutate(
+    meal_plan = factor(meal_plan), 
+    age = parse_number(if_else(age == 'five', '5', age))
+  )
+
+#rds stores the exact R object that is used
+write_rds(students, 'Output/student.rds')
+read_rds('Output/student.rds')
 
 ```
