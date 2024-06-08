@@ -1,0 +1,324 @@
+---
+author: Jed Roundy
+format: pdf
+---
+#9.1 Packages
+```{r}
+library(tidyverse)
+```
+
+#9.2 Aesthetic Mappings
+```{r}
+mpg |> ggplot(aes(x = displ, y = hwy, color = class)) + 
+  geom_point()
+
+#same but with shapes
+mpg |> ggplot(aes(x = displ, y = hwy, shape = class)) + 
+  geom_point()
+#but theres not enough shapes for 7 classes
+
+#we could try using something like size or transparency/alpha
+mpg |> ggplot(aes(x = displ, y = hwy, size = class)) + 
+  geom_point()
+mpg |> ggplot(aes(x = displ, y = hwy, alpha = class)) + 
+  geom_point()
+
+#mapping a categorical variable to a continuous aesthetic is not a good idea
+#because it implies a hierarchy
+
+
+
+#We can also modify the aesthetic so that it isn't mapped to a variable
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point(color = 'blue')
+
+#We can change the size
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point(size = 2)
+
+#or a shape
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point(shape = 4)
+```
+
+
+#9.2 Exercises
+```{r}
+#1. Create a scatterplot of hwy vs. displ where the points are pink filled in triangles.
+mpg |> ggplot(aes(x = hwy, y = displ)) + 
+  geom_point(shape = 17, color = 'deeppink')
+
+#2. Why did the following code not result in a plot with blue points?
+
+ggplot(mpg) +
+  geom_point(aes(x = displ, y = hwy, color = "blue"))
+
+#because it thinks that blue is supposed to be a variable that is assigned
+
+#3.What does the stroke aesthetic do? What shapes does it work with? (Hint: use ?geom_point)
+#modifies the width of the outside border
+
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point(shape = 24, stroke = .5, color = 'purple', fill = 'white', size = 2)
+
+#4. What happens if you map an aesthetic to something other than a variable name, like aes(color = displ <
+#5)? Note, you’ll also need to specify x and y.
+
+mpg |> ggplot(aes(x = displ, y = hwy, color = displ < 5)) + 
+  geom_point()
+
+
+```
+
+#9.3 Geometric Objects
+```{r}
+#we can overlaly two geoms in the same plot
+mpg |> ggplot(aes(x = displ, y = hwy, color = drv)) + 
+  geom_point(aes(shape = drv)) + 
+  geom_smooth(aes(linetype = drv))
+
+
+mpg |> 
+  group_by(class) |> 
+  summarize(
+    avg_hwy = mean(hwy, na.rm = TRUE), 
+    avg_cty = mean(cty, na.rm = TRUE)
+    ) |> 
+  ggplot(aes(x = avg_cty, y = avg_hwy)) + 
+  geom_point(aes(color = class), size = 5) + #local mapping of color here
+  geom_smooth(se = FALSE)#allows for a single blue line here
+
+#We can emphasize certain variables well by specifying data at the geom level
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  geom_point(
+    data = mpg |> 
+      filter(class == 'compact'), 
+    shape = 'circle', 
+    color = 'red',
+    stroke = 1
+  ) + 
+  labs(
+    title = 'Compact vs Other', 
+    subtitle = 'Why Compact is Better')
+
+#ggplot2 has 40 geoms, but that doesn't cover them all. Maybe another package gets it? 
+library(ggridges)
+
+mpg |> ggplot(aes(x = hwy, y = drv, fill = drv)) + 
+  geom_density_ridges(color = 'black', alpha = .5) + 
+  scale_fill_hue()
+```
+
+#9.3 Exercises
+```{r}
+
+#for full list of geoms
+ #https://ggplot2.tidyverse.org/reference
+
+#-------------------------------------
+#Exercises
+#1. What geom would you use to draw a line chart? A boxplot? A histogram? An area chart?
+#geom_line()
+#geom_boxplot
+#geom_histogram()
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_area()
+```
+
+#9.4 Facets
+```{r}
+#previously we used facet_wrap
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  facet_wrap(~cyl)
+  
+
+#we can do the same for two vars
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  facet_grid(drv~cyl)
+#default is to keep the scales of each facet the same
+
+#but if comparison between facets isn't important, they can be 'free'
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  facet_grid(drv~cyl, scales = 'free')
+
+#or just free one axis
+mpg |> ggplot(aes(x = displ, y = hwy)) + 
+  geom_point() + 
+  facet_grid(drv~cyl, scales = 'free_y')
+```
+#9.5 Statistical Transformations
+```{r}
+#Some geoms create values from the data given, such as geom_bar()
+#take the following plot
+mpg |>  ggplot(aes(x = displ)) + 
+  geom_bar()
+
+#Where does it get the count values? 
+#by manipulating the data behind the scenes using stat_count()
+
+#Each geom has a defualt stat, typically don't need to worry about this. 
+#Three reasons you might tho
+
+#1. Override default stat
+#2. Override default mapping from transformed var to aesthetic (i.e display a bar chart of proportion instead of count)
+#3. Draw more attention to statistical transformation within code
+
+ggplot(diamonds) + 
+  stat_summary(
+    aes(x = cut, y = depth), 
+    fun.min = min, 
+    fun.max = mean, 
+    fun = median, 
+  )
+
+
+  
+#more than 20 stats to use
+#stat_ gives more detail into how graph is compiled maybe?
+```
+
+#9.5 Exercieses
+```{r}
+#1. What is default geom associated with stat_summary? 
+diamonds |> 
+  group_by(cut) |> 
+  summarize(
+  min = min(depth), 
+  max = max(depth), 
+  midpoint = mean(depth)
+            ) |> 
+  ggplot(aes(x = cut, y = midpoint)) + 
+  geom_pointrange(aes(ymin = min, ymax = max))
+
+#5 In proportion bar chart, we needed to set group = 1. Why? 
+
+mpg |> 
+  group_by(class) |> 
+  ggplot(aes(x = class, fill = drv))+
+  geom_bar(position = 'fill')
+```
+
+#9.6 Position adjustments
+```{r}
+#THere are 5 main positions: 'identity', 'dodge', 'fill', 'jitter', 'stack'
+
+#Identity puts values exactly where they fall in context of the graph. 
+diamonds |> 
+  ggplot(aes(x = cut, color = color)) + 
+  geom_bar(fill = NA, position = 'identity')
+#not very helpful
+
+#Dodge puts them right beside each other
+diamonds |> 
+  ggplot(aes(x = cut, fill = color)) + 
+  geom_bar(position = 'dodge')
+
+#position = 'jitter' is not great for bar charts, 
+diamonds |> 
+  ggplot(aes(x = cut, fill = color)) + 
+  geom_bar(position = 'jitter')
+
+
+#but works well for heavily overlapping data in scatterplots
+diamonds |> 
+  ggplot(aes(x = carat, y = price, color = color)) + 
+  geom_point(position = 'jitter')
+```
+
+#9.6 Exercises
+```{r}
+#1. What is the problem with the following plot? How could you improve it?
+#doesn't show all possible values
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_point()
+
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_jitter()
+
+#2. What, if anything, is the difference between the two plots? Why?
+
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point()
+ggplot(mpg, aes(x = displ, y = hwy)) +
+  geom_point(position = "identity")
+
+#no difference. geom_point already uses position = 'identity' by default
+
+#3. What parameters to geom_jitter() control the amount of jittering?
+#width and height
+#5 is probably too much
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_jitter(height = 5, width = 5)
+#vs. 
+#this might be just right
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_jitter(height = 1, width = 1)
+
+#4. Compare and contrast geom_jitter() with geom_count().
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_count()
+
+#geom count is basically geom_point but with a size argument
+#geom_count masks more points instead of showing 
+#they go well together
+ggplot(mpg, aes(x = cty, y = hwy)) + 
+  geom_count() + 
+  geom_jitter(height = 5)
+
+#What’s the default position adjustment for geom_boxplot()? Create a visualization of the mpg dataset that demonstrates it.
+#dodge2
+ggplot(mpg, aes(x = class, y = hwy)) + 
+  geom_boxplot()
+
+ggplot(mpg, aes(x = class, y = hwy, fill = class)) + 
+  geom_boxplot(position = 'dodge') + 
+  scale_fill_few()
+```
+
+#9.7 Coordinate Systems
+```{r}
+#Primary coordinate system is cartesian
+#two others occasionally useful
+
+nz <- map_data('nz')
+
+ggplot(nz, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = 'white', color = 'black')
+
+#coord quickmap sets the aspect ratio correctly
+ggplot(nz, aes(x = long, y = lat, group = group)) + 
+  geom_polygon(fill = 'white', color = 'black') + 
+  coord_quickmap()
+
+#we could also use polar coordinates
+bar <- ggplot(diamonds) + 
+  geom_bar(aes(x = clarity, fill = clarity), 
+           show.legend = FALSE, 
+           width = 1) + 
+  theme(aspect.ratio = 1)
+
+bar + coord_flip()
+
+bar + coord_polar()
+
+#turning stacked bar chart into pie chart
+
+diamonds |> 
+  ggplot(aes(x = color, fill = cut)) + 
+  geom_bar(position = 'stack') + 
+  coord_polar()
+
+#Format:
+
+#ggplot(DATA) + 
+  #GEOM_FUNC(
+  #MAPPINGS, 
+  #STAT, 
+  #POSITION) + 
+  #COORDINATE_FUNCTION + 
+  #FACET_FUNCTION
+```
